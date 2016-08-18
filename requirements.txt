@@ -1,0 +1,3 @@
+billboard.py==3.0.0
+boto3==1.4.0
+spotipy==2.3.8
