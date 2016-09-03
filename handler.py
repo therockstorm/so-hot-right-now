@@ -5,20 +5,20 @@ sys.path.append(os.path.join("venv", "lib", "python2.7", "site-packages"))
 
 from billboard import ChartData
 from itertools import chain
+from itertools import izip_longest
 from spotipy import Spotify
 from spotipy.oauth2 import SpotifyOAuth
 
 
 class BillboardFetcher(object):
-    CHARTS = ["hot-100", "youtube", "spotify-viral-50", "spotify-velocity", "digital-songs",
-        "radio-songs", "streaming-songs", "twitter-top-tracks", "twitter-emerging-artists",
-        "on-demand-songs", "lyricfind-us"]
+    CHARTS = ["hot-100", "spotify-viral-50", "spotify-velocity", "digital-songs",
+        "radio-songs", "streaming-songs", "twitter-top-tracks", "on-demand-songs"]
 
     def get_debut_ids(self):
         return set(chain.from_iterable([self._get_debut_ids(chart) for chart in self.CHARTS]))
 
     def _get_debut_ids(self, chart):
-        return [track.spotifyID for track in ChartData(chart) if track.weeks == 1 and track.spotifyID]
+        return [t.spotifyID for t in ChartData(chart) if t.weeks == 1 and t.spotifyID]
 
 
 class SpotifyPlaylistUpdater(object):
@@ -37,7 +37,7 @@ class SpotifyPlaylistUpdater(object):
     def update(self, user, playlist_id):
         spotify = Spotify(auth=self._get_token(user))
         existing_ids = self._get_existing_ids(user, playlist_id, spotify)
-        add_ids = self._get_ids_to_add(existing_ids, BillboardFetcher().get_debut_ids())
+        add_ids = BillboardFetcher().get_debut_ids() - set(existing_ids)
 
         if add_ids:
             print("Adding {0} tracks.".format(len(add_ids)))
@@ -48,14 +48,28 @@ class SpotifyPlaylistUpdater(object):
         remove_ids = self._get_ids_to_remove(existing_ids, len(existing_ids) + len(add_ids))
 
         if remove_ids:
-            spotify.user_playlist_remove_all_occurrences_of_tracks(user, playlist_id, remove_ids)
+            args = [iter(remove_ids)] * 100
+            for group in izip_longest(*args, fillvalue=""):
+                spotify.user_playlist_remove_all_occurrences_of_tracks(user, playlist_id, group)
 
     def _get_existing_ids(self, user, playlist_id, spotify):
-        playlist = spotify.user_playlist_tracks(user, playlist_id, "items.track.id")
+        playlist = spotify.user_playlist_tracks(user, playlist_id, "items.track.id,next")
+        tracks = self._parse_ids(playlist)
+
+        while playlist['next']:
+            playlist = spotify.next(playlist)
+            tracks += self._parse_ids(playlist)
+
+        return tracks
+
+    def _parse_ids(self, playlist):
         return [item["track"]["id"] for item in playlist["items"] if item]
 
-    def _get_ids_to_add(self, existing_ids, debut_ids):
-        return [id for id in debut_ids if id not in existing_ids]
+    def get_debut_ids(self):
+        return set(chain.from_iterable([self._get_debut_ids(chart) for chart in self.CHARTS]))
+
+    def _get_debut_ids(self, chart):
+        return [t.spotifyID for t in ChartData(chart) if t.weeks == 1 and t.spotifyID]
 
     def _get_ids_to_remove(self, existing_ids, size):
         remove_cnt = size - self.MAX_TRACKS if size > self.MAX_TRACKS else 0
