@@ -65,12 +65,6 @@ class SpotifyPlaylistUpdater(object):
     def _parse_ids(self, playlist):
         return [item["track"]["id"] for item in playlist["items"] if item]
 
-    def get_debut_ids(self):
-        return set(chain.from_iterable([self._get_debut_ids(chart) for chart in self.CHARTS]))
-
-    def _get_debut_ids(self, chart):
-        return [t.spotifyID for t in ChartData(chart) if t.weeks == 1 and t.spotifyID]
-
     def _get_ids_to_remove(self, existing_ids, size):
         remove_cnt = size - self.MAX_TRACKS if size > self.MAX_TRACKS else 0
         print("Removing {0} of {1} tracks.".format(remove_cnt, size))
