@@ -1,32 +1,27 @@
-#https://github.com/serverless/serverless/blob/master/docs/understanding-serverless/serverless-yml.md
-service: billboard
+service: so-hot-right-now
 
 provider:
-    name: aws
-    runtime: python2.7
-    iamRoleStatements:
-        -  Effect: "Allow"
-           Action:
-                - "dynamodb:GetItem"
-                - "dynamodb:UpdateItem"
-           Resource: "arn:aws:dynamodb:us-west-2:111685254296:table/spotify"
-
-defaults:
-    region: us-west-2
+  name: aws
+  region: us-west-2
+  runtime: python2.7
+  memory: 128
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:GetItem"
+        - "dynamodb:UpdateItem"
+      Resource: "arn:aws:dynamodb:us-west-2:111685254296:table/spotify"
 
 package:
-    include:
-        - venv/lib/python2.7/site-packages
-    exclude:
-        - .gitignore
-        - .editorconfig
-        - requirements.txt
-        - .git
-        - venv
+  exclude:
+    - .gitignore
+    - .editorconfig
+    - requirements.txt
+    - .git
 
 functions:
-    handle:
-        handler: handler.handle
-        timeout: 15
-        events:
-            - schedule: cron(15 15 * * ? *)
+  handle:
+    handler: handler.handle
+    timeout: 15
+    events:
+      - schedule: cron(15 15 * * ? *)

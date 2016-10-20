@@ -5,7 +5,6 @@ sys.path.append(os.path.join("venv", "lib", "python2.7", "site-packages"))
 
 from billboard import ChartData
 from itertools import chain
-from itertools import izip_longest
 from spotipy import Spotify
 from spotipy.oauth2 import SpotifyOAuth
 
@@ -25,7 +24,7 @@ class SpotifyPlaylistUpdater(object):
     USERNAME_KEY = "username"
     TOKEN_INFO_KEY = "token_info"
     SPOTIFY_SCOPE = "playlist-modify-public"
-    MAX_TRACKS = 200
+    MAX_TRACKS = 100
 
     def __init__(self, client_id, client_secret, redirect_uri):
         dynamo = boto3.resource("dynamodb", endpoint_url="https://dynamodb.us-west-2.amazonaws.com")
@@ -48,8 +47,7 @@ class SpotifyPlaylistUpdater(object):
         remove_ids = self._get_ids_to_remove(existing_ids, len(existing_ids) + len(add_ids))
 
         if remove_ids:
-            args = [iter(remove_ids)] * 100
-            for group in izip_longest(*args, fillvalue=""):
+            for group in self._chunker(remove_ids, 100):
                 spotify.user_playlist_remove_all_occurrences_of_tracks(user, playlist_id, group)
 
     def _get_existing_ids(self, user, playlist_id, spotify):
@@ -69,6 +67,9 @@ class SpotifyPlaylistUpdater(object):
         remove_cnt = size - self.MAX_TRACKS if size > self.MAX_TRACKS else 0
         print("Removing {0} of {1} tracks.".format(remove_cnt, size))
         return existing_ids[:remove_cnt]
+
+    def _chunker(self, seq, size):
+        return (seq[pos:pos + size] for pos in xrange(0, len(seq), size))
 
     def _get_token(self, user):
         res = self.table.get_item(Key={self.USERNAME_KEY: user})

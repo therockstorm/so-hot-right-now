@@ -56,4 +56,5 @@ target/
 install.txt
 .vagrant/
 venv
-.chalice
+func-test.py
+.serverless
