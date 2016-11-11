@@ -1,10 +1,13 @@
+frameworkVersion: "=1.1.0"
+
 service: so-hot-right-now
 
 provider:
   name: aws
-  region: us-west-2
   runtime: python2.7
-  memory: 128
+  region: us-west-2
+  cfLogs: true
+  memorySize: 128
   iamRoleStatements:
     - Effect: "Allow"
       Action:
@@ -14,14 +17,17 @@ provider:
 
 package:
   exclude:
+    - .git/**
+    - .serverless/**
+    - venv/**
+    - '!venv/lib/python2.7/site-packages/**'
     - .gitignore
     - .editorconfig
     - requirements.txt
-    - .git
 
 functions:
   handle:
     handler: handler.handle
-    timeout: 15
+    timeout: 30
     events:
       - schedule: cron(15 15 * * ? *)
