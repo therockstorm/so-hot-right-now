@@ -1,4 +1,4 @@
-frameworkVersion: "=1.1.0"
+frameworkVersion: "=1.4.0"
 
 service: so-hot-right-now
 

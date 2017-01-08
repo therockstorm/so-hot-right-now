@@ -27,7 +27,7 @@ class SpotifyPlaylistUpdater(object):
     MAX_TRACKS = 100
 
     def __init__(self, client_id, client_secret, redirect_uri):
-        dynamo = boto3.resource("dynamodb", endpoint_url="https://dynamodb.us-west-2.amazonaws.com")
+        dynamo = boto3.resource("dynamodb", region_name='us-west-2', endpoint_url="https://dynamodb.us-west-2.amazonaws.com")
         self.table = dynamo.Table("spotify")
         self.client_id = client_id
         self.client_secret = client_secret
@@ -75,7 +75,7 @@ class SpotifyPlaylistUpdater(object):
         res = self.table.get_item(Key={self.USERNAME_KEY: user})
         oauth = SpotifyOAuth(client_id=self.client_id, client_secret=self.client_secret,
             redirect_uri=self.redirect_uri, scope=self.SPOTIFY_SCOPE)
-        token_info = oauth._refresh_access_token(res["Item"][self.TOKEN_INFO_KEY]["refresh_token"])
+        token_info = oauth.refresh_access_token(res["Item"][self.TOKEN_INFO_KEY]["refresh_token"])
         self._update_token_info(user, token_info)
         return token_info["access_token"]
 
